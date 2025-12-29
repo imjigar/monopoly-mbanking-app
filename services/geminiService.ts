@@ -6,9 +6,8 @@ export const parseTransactionCommand = async (
   command: string,
   players: Player[]
 ): Promise<{ fromId: string; toId: string; amount: number; type: TransactionType } | null> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
-  const ai = new GoogleGenAI({ apiKey });
+  // Always use process.env.API_KEY directly in the constructor
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const playerContext = players.map(p => ({ id: p.id, name: p.name })).concat([{ id: 'BANK', name: 'Bank' }]);
 
@@ -38,9 +37,24 @@ export const parseTransactionCommand = async (
       contents: prompt,
       config: {
         responseMimeType: "application/json",
+        // Recommended way to get JSON is by configuring a responseSchema
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            fromId: { type: Type.STRING },
+            toId: { type: Type.STRING },
+            amount: { type: Type.NUMBER },
+            type: { 
+              type: Type.STRING,
+              description: "The type of transaction: TRANSFER, PASS_GO, BANK_DEPOSIT, BANK_WITHDRAWAL"
+            },
+          },
+          required: ['fromId', 'toId', 'amount', 'type'],
+        }
       }
     });
     
+    // Use .text property to access extracted string output
     const text = response.text?.trim();
     if (!text || text === 'null') return null;
     return JSON.parse(text);
@@ -56,9 +70,8 @@ export const getTransactionCommentary = async (
   senderName: string,
   receiverName: string
 ): Promise<string | null> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
-  const ai = new GoogleGenAI({ apiKey });
+  // Always use process.env.API_KEY directly in the constructor
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
     You are the witty, sarcastic, and sometimes ruthless narrator of a Monopoly game.
@@ -83,9 +96,11 @@ export const getTransactionCommentary = async (
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
+        // Thinking config for reasoning-heavy tasks, disabled here for speed
         thinkingConfig: { thinkingBudget: 0 }
       }
     });
+    // Use .text property to access extracted string output
     return response.text || null;
   } catch (error) {
     console.error("Gemini commentary error:", error);
@@ -94,9 +109,8 @@ export const getTransactionCommentary = async (
 };
 
 export const askRulesBot = async (query: string): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "AI services are currently offline.";
-  const ai = new GoogleGenAI({ apiKey });
+  // Always use process.env.API_KEY directly in the constructor
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
     You are an expert Monopoly Rules Lawyer. 
@@ -115,6 +129,7 @@ export const askRulesBot = async (query: string): Promise<string> => {
         thinkingConfig: { thinkingBudget: 0 }
       }
     });
+    // Use .text property to access extracted string output
     return response.text || "I couldn't find a rule for that.";
   } catch (error) {
     console.error("Gemini rules error:", error);
@@ -123,9 +138,8 @@ export const askRulesBot = async (query: string): Promise<string> => {
 };
 
 export const getStrategyAdvice = async (players: Player[]): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return "AI services are currently offline.";
-  const ai = new GoogleGenAI({ apiKey });
+  // Always use process.env.API_KEY directly in the constructor
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
     You are a professional Monopoly strategist. 
@@ -144,6 +158,7 @@ export const getStrategyAdvice = async (players: Player[]): Promise<string> => {
         thinkingConfig: { thinkingBudget: 0 }
       }
     });
+    // Use .text property to access extracted string output
     return response.text || "Keep buying property and building houses!";
   } catch (error) {
     console.error("Gemini strategy error:", error);

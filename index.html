@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#020617">
-    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="manifest" href="./manifest.webmanifest">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -67,34 +67,11 @@
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
       }
 
-      .neon-border {
-        position: relative;
-      }
-      .neon-border::after {
-        content: '';
-        position: absolute;
-        inset: -1px;
-        background: linear-gradient(45deg, var(--neon-cyan), var(--neon-purple), var(--neon-blue));
-        z-index: -1;
-        border-radius: inherit;
-        opacity: 0.3;
-        transition: opacity 0.3s ease;
-      }
-      .neon-border:hover::after {
-        opacity: 0.6;
-      }
-
-      @keyframes orbit {
-        from { transform: rotate(0deg) translateX(100px) rotate(0deg); }
-        to { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
-      }
-
       .h-screen-safe {
         height: 100vh;
         height: -webkit-fill-available;
       }
 
-      /* Pulse animations for status indicators */
       @keyframes pulse-cyan {
         0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4); }
         70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
@@ -105,15 +82,18 @@
         font-family: 'JetBrains Mono', monospace;
       }
     </style>
+    
     <script type="importmap">
 {
   "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react": "https://esm.sh/react@19.0.0",
+    "@google/genai": "https://esm.sh/@google/genai@1.31.0",
+    "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "vite": "https://esm.sh/vite@^7.3.0"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
@@ -126,5 +106,8 @@
     </div>
     
     <div id="root" class="h-screen-safe relative z-10"></div>
+
+    <!-- Entry Point -->
+    <script type="module" src="./index.tsx"></script>
   </body>
 </html>
