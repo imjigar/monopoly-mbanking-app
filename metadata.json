@@ -1,0 +1,7 @@
+{
+  "name": "BankAIr",
+  "description": "A modern, high-performance banking assistant for Monopoly. Tracks balances, transactions, and handles late-joining players.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
