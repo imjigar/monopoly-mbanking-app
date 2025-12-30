@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Player, Transaction, TransactionType, ThemeColor, Currency, GameSettings } from './types';
 import { DEFAULT_STARTING_BALANCE, DEFAULT_PASS_GO_AMOUNT, PLAYER_COLORS, CURRENCIES, AVATARS } from './constants';
@@ -11,11 +10,11 @@ import PlayerFormModal from './components/PlayerFormModal';
 import SettingsModal from './components/SettingsModal';
 import TransactionFeedback from './components/TransactionFeedback';
 import CommandCenter from './components/CommandCenter';
+import AnalysisModal from './components/AnalysisModal';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 const REVEAL_DELETE_THRESHOLD_MS = 600;
 const STORAGE_KEY = 'bankair_state_v1';
-const OLD_STORAGE_KEY = 'polybank_state_v3';
 
 const parseMoneyInput = (val: string | number): number => {
   if (typeof val === 'number') return val;
@@ -64,6 +63,7 @@ const App: React.FC = () => {
   const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [playerFormState, setPlayerFormState] = useState<{
     isOpen: boolean;
     playerToEdit?: Player;
@@ -97,9 +97,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let savedGame = localStorage.getItem(STORAGE_KEY);
-    if (!savedGame) {
-      savedGame = localStorage.getItem(OLD_STORAGE_KEY);
-    }
     if (savedGame) {
       try {
         const parsed = JSON.parse(savedGame);
@@ -116,7 +113,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Sync state to local storage automatically
   useEffect(() => {
     if (gameStarted) {
       const stateToSave = { players, transactions, gameStarted, currency, settings: gameSettings };
@@ -150,9 +146,6 @@ const App: React.FC = () => {
     setPlayers(resetPlayers);
     setTransactions([]);
     setGameStarted(true);
-
-    const stateToSave = { players: resetPlayers, transactions: [], gameStarted: true, currency, settings: finalSettings };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
   };
 
   const handleNewGame = () => {
@@ -395,14 +388,15 @@ const App: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-slate-950 overflow-hidden touch-none bg-grid-pattern" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onContextMenu={(e) => e.preventDefault()}>
       {showFeedback && <TransactionFeedback />}
-      
-      {/* Dynamic Background Glow */}
       <div className="absolute inset-0 bg-radial-glow pointer-events-none"></div>
 
       <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-[100] pointer-events-none">
         <div className="flex gap-4 items-center pointer-events-auto">
-          <button onClick={() => setIsSettingsOpen(true)} title="Game Settings" className="bg-slate-900/60 backdrop-blur-md text-cyan-400 p-4 rounded-3xl border border-cyan-500/20 hover:bg-cyan-500 hover:text-white transition-all shadow-[0_0_20px_rgba(34,211,238,0.1)] active:scale-90">
+          <button onClick={() => setIsSettingsOpen(true)} title="Settings" className="bg-slate-900/60 backdrop-blur-md text-cyan-400 p-4 rounded-3xl border border-cyan-500/20 hover:bg-cyan-500 hover:text-white transition-all shadow-[0_0_20px_rgba(34,211,238,0.1)] active:scale-90">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          </button>
+          <button onClick={() => setIsAnalysisOpen(true)} title="AI Analysis" className="bg-slate-900/60 backdrop-blur-md text-purple-400 p-4 rounded-3xl border border-purple-500/20 hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.1)] active:scale-90">
+             <span className="text-2xl">🧠</span>
           </button>
         </div>
         <div className="flex flex-col items-end pointer-events-auto">
@@ -420,45 +414,22 @@ const App: React.FC = () => {
       </div>
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[100]">
-        <button 
-          onClick={() => setIsCommandCenterOpen(true)}
-          className="bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 p-4 rounded-full shadow-[0_0_30px_rgba(8,145,178,0.4)] border-2 border-white/10 active:scale-90 transition-all group relative"
-        >
+        <button onClick={() => setIsCommandCenterOpen(true)} className="bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 p-4 rounded-full shadow-[0_0_30px_rgba(8,145,178,0.4)] border-2 border-white/10 active:scale-90 transition-all group relative">
           <div className="absolute -inset-1 bg-cyan-400/10 blur-lg rounded-full animate-pulse"></div>
           <span className="text-2xl group-hover:scale-110 group-hover:rotate-12 transition-all block relative z-10">✨</span>
         </button>
-        <div className="mt-3 text-[9px] font-black text-cyan-400/40 uppercase tracking-[0.5em] text-center">AI Uplink</div>
       </div>
 
       {dragVisual.isDragging && <div className="absolute inset-0 pointer-events-none z-[110]"><svg className="w-full h-full"><line x1={dragVisual.startX} y1={dragVisual.startY} x2={dragVisual.currX} y2={dragVisual.currY} stroke="#22d3ee" strokeWidth="4" strokeDasharray="10 10" className="opacity-40 animate-[dash_1s_linear_infinite]" /></svg></div>}
       
-      <style>{`
-        @keyframes dash {
-          to { stroke-dashoffset: -20; }
-        }
-      `}</style>
+      <style>{`@keyframes dash { to { stroke-dashoffset: -20; } }`}</style>
 
-      <CommandCenter 
-        isOpen={isCommandCenterOpen} 
-        onClose={() => setIsCommandCenterOpen(false)} 
-        players={players} 
-        onTransaction={handleTransaction} 
-      />
-      
+      <CommandCenter isOpen={isCommandCenterOpen} onClose={() => setIsCommandCenterOpen(false)} players={players} onTransaction={handleTransaction} />
       <TransactionModal isOpen={modalState.isOpen} initialFromId={modalState.initialFromId} initialToId={modalState.initialToId} onClose={() => setModalState({ isOpen: false })} players={players} currency={currency} passGoAmount={gameSettings.passGoAmount} onTransaction={handleTransaction} />
       <HistoryLogModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} transactions={transactions} players={players} currency={currency} onToggleTransaction={handleToggleTransaction} />
+      <AnalysisModal isOpen={isAnalysisOpen} onClose={() => setIsAnalysisOpen(false)} players={players} transactions={transactions} currency={currency} />
       <PlayerFormModal isOpen={playerFormState.isOpen} onClose={() => setPlayerFormState({ isOpen: false })} initialData={playerFormState.playerToEdit} onSave={(data) => { if (playerFormState.playerToEdit) setPlayers(prev => prev.map(p => p.id === playerFormState.playerToEdit?.id ? { ...p, ...data } : p)); }} />
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-        settings={gameSettings} 
-        onUpdateSettings={setGameSettings} 
-        currency={currency} 
-        onUpdateCurrency={setCurrency} 
-        playerCount={players.length} 
-        onAddPlayer={handleAddPlayer} 
-        onNewGame={handleNewGame}
-      />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} settings={gameSettings} onUpdateSettings={setGameSettings} currency={currency} onUpdateCurrency={setCurrency} playerCount={players.length} onAddPlayer={handleAddPlayer} onNewGame={handleNewGame} />
     </div>
   );
 };

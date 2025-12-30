@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { Player, Transaction, TransactionType } from '../types';
 
@@ -6,7 +5,6 @@ export const parseTransactionCommand = async (
   command: string,
   players: Player[]
 ): Promise<{ fromId: string; toId: string; amount: number; type: TransactionType } | null> => {
-  // Always use process.env.API_KEY directly in the constructor
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const playerContext = players.map(p => ({ id: p.id, name: p.name })).concat([{ id: 'BANK', name: 'Bank' }]);
@@ -37,7 +35,6 @@ export const parseTransactionCommand = async (
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        // Recommended way to get JSON is by configuring a responseSchema
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -54,7 +51,6 @@ export const parseTransactionCommand = async (
       }
     });
     
-    // Use .text property to access extracted string output
     const text = response.text?.trim();
     if (!text || text === 'null') return null;
     return JSON.parse(text);
@@ -64,31 +60,28 @@ export const parseTransactionCommand = async (
   }
 };
 
-export const getTransactionCommentary = async (
-  transaction: Transaction,
+export const getDetailedGameAnalysis = async (
   players: Player[],
-  senderName: string,
-  receiverName: string
-): Promise<string | null> => {
-  // Always use process.env.API_KEY directly in the constructor
+  transactions: Transaction[]
+): Promise<{ sentiment: string; targetIntel: string; advice: string[] } | null> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-  const prompt = `
-    You are the witty, sarcastic, and sometimes ruthless narrator of a Monopoly game.
-    A transaction just occurred:
-    Type: ${transaction.type}
-    Sender: ${senderName}
-    Receiver: ${receiverName}
-    Amount: ${transaction.amount}
-    
-    Current Player Balances:
-    ${players.map(p => `${p.name}: ${p.balance}`).join(', ')}
+  const simplifiedHistory = transactions.slice(-15).map(t => ({
+    from: t.fromId === 'BANK' ? 'Bank' : (players.find(p => p.id === t.fromId)?.name || 'Unknown'),
+    to: t.toId === 'BANK' ? 'Bank' : (players.find(p => p.id === t.toId)?.name || 'Unknown'),
+    amt: t.amount,
+    type: t.type
+  }));
 
-    Give a very short (max 2 sentences), fun commentary on this event. 
-    If someone is low on money, mock them gently. 
-    If someone is rich, warn the others.
-    If it's Pass Go, be encouraging but brief.
-    Keep it punchy and entertaining!
+  const prompt = `
+    Analyze this Monopoly game state and provide deep strategic insights.
+    Players: ${players.map(p => `${p.name} ($${p.balance})`).join(', ')}
+    Recent History: ${JSON.stringify(simplifiedHistory)}
+
+    Return a JSON object:
+    - sentiment: A clever 1-sentence description of the current game vibe.
+    - targetIntel: 1 sentence identifying the biggest threat and why.
+    - advice: An array of 3 specific, punchy tactical recommendations for the players.
   `;
 
   try {
@@ -96,20 +89,32 @@ export const getTransactionCommentary = async (
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        // Thinking config for reasoning-heavy tasks, disabled here for speed
-        thinkingConfig: { thinkingBudget: 0 }
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            sentiment: { type: Type.STRING },
+            targetIntel: { type: Type.STRING },
+            advice: { 
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: ['sentiment', 'targetIntel', 'advice'],
+        }
       }
     });
-    // Use .text property to access extracted string output
-    return response.text || null;
+    
+    const text = response.text?.trim();
+    if (!text) return null;
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Gemini commentary error:", error);
+    console.error("Gemini analysis error:", error);
     return null;
   }
 };
 
 export const askRulesBot = async (query: string): Promise<string> => {
-  // Always use process.env.API_KEY directly in the constructor
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -129,7 +134,6 @@ export const askRulesBot = async (query: string): Promise<string> => {
         thinkingConfig: { thinkingBudget: 0 }
       }
     });
-    // Use .text property to access extracted string output
     return response.text || "I couldn't find a rule for that.";
   } catch (error) {
     console.error("Gemini rules error:", error);
@@ -138,7 +142,6 @@ export const askRulesBot = async (query: string): Promise<string> => {
 };
 
 export const getStrategyAdvice = async (players: Player[]): Promise<string> => {
-  // Always use process.env.API_KEY directly in the constructor
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
@@ -158,7 +161,6 @@ export const getStrategyAdvice = async (players: Player[]): Promise<string> => {
         thinkingConfig: { thinkingBudget: 0 }
       }
     });
-    // Use .text property to access extracted string output
     return response.text || "Keep buying property and building houses!";
   } catch (error) {
     console.error("Gemini strategy error:", error);
