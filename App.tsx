@@ -10,7 +10,6 @@ import PlayerFormModal from './components/PlayerFormModal';
 import SettingsModal from './components/SettingsModal';
 import TransactionFeedback from './components/TransactionFeedback';
 import CommandCenter from './components/CommandCenter';
-import AnalysisModal from './components/AnalysisModal';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 const REVEAL_DELETE_THRESHOLD_MS = 600;
@@ -63,7 +62,6 @@ const App: React.FC = () => {
   const [isCommandCenterOpen, setIsCommandCenterOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [playerFormState, setPlayerFormState] = useState<{
     isOpen: boolean;
     playerToEdit?: Player;
@@ -395,9 +393,6 @@ const App: React.FC = () => {
           <button onClick={() => setIsSettingsOpen(true)} title="Settings" className="bg-slate-900/60 backdrop-blur-md text-cyan-400 p-4 rounded-3xl border border-cyan-500/20 hover:bg-cyan-500 hover:text-white transition-all shadow-[0_0_20px_rgba(34,211,238,0.1)] active:scale-90">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
           </button>
-          <button onClick={() => setIsAnalysisOpen(true)} title="AI Analysis" className="bg-slate-900/60 backdrop-blur-md text-purple-400 p-4 rounded-3xl border border-purple-500/20 hover:bg-purple-500 hover:text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.1)] active:scale-90">
-             <span className="text-2xl">🧠</span>
-          </button>
         </div>
         <div className="flex flex-col items-end pointer-events-auto">
           <button onClick={() => setIsHistoryOpen(true)} className="bg-slate-900/60 backdrop-blur-md text-emerald-400 p-4 rounded-3xl border border-emerald-500/20 hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.1)] active:scale-90 group">
@@ -427,7 +422,6 @@ const App: React.FC = () => {
       <CommandCenter isOpen={isCommandCenterOpen} onClose={() => setIsCommandCenterOpen(false)} players={players} onTransaction={handleTransaction} />
       <TransactionModal isOpen={modalState.isOpen} initialFromId={modalState.initialFromId} initialToId={modalState.initialToId} onClose={() => setModalState({ isOpen: false })} players={players} currency={currency} passGoAmount={gameSettings.passGoAmount} onTransaction={handleTransaction} />
       <HistoryLogModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} transactions={transactions} players={players} currency={currency} onToggleTransaction={handleToggleTransaction} />
-      <AnalysisModal isOpen={isAnalysisOpen} onClose={() => setIsAnalysisOpen(false)} players={players} transactions={transactions} currency={currency} />
       <PlayerFormModal isOpen={playerFormState.isOpen} onClose={() => setPlayerFormState({ isOpen: false })} initialData={playerFormState.playerToEdit} onSave={(data) => { if (playerFormState.playerToEdit) setPlayers(prev => prev.map(p => p.id === playerFormState.playerToEdit?.id ? { ...p, ...data } : p)); }} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} settings={gameSettings} onUpdateSettings={setGameSettings} currency={currency} onUpdateCurrency={setCurrency} playerCount={players.length} onAddPlayer={handleAddPlayer} onNewGame={handleNewGame} />
     </div>

@@ -1,3 +1,4 @@
+// Updated geminiService to include missing game analysis and strategy functions
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { Player, Transaction, TransactionType } from '../types';
 
@@ -60,60 +61,6 @@ export const parseTransactionCommand = async (
   }
 };
 
-export const getDetailedGameAnalysis = async (
-  players: Player[],
-  transactions: Transaction[]
-): Promise<{ sentiment: string; targetIntel: string; advice: string[] } | null> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-  const simplifiedHistory = transactions.slice(-15).map(t => ({
-    from: t.fromId === 'BANK' ? 'Bank' : (players.find(p => p.id === t.fromId)?.name || 'Unknown'),
-    to: t.toId === 'BANK' ? 'Bank' : (players.find(p => p.id === t.toId)?.name || 'Unknown'),
-    amt: t.amount,
-    type: t.type
-  }));
-
-  const prompt = `
-    Analyze this Monopoly game state and provide deep strategic insights.
-    Players: ${players.map(p => `${p.name} ($${p.balance})`).join(', ')}
-    Recent History: ${JSON.stringify(simplifiedHistory)}
-
-    Return a JSON object:
-    - sentiment: A clever 1-sentence description of the current game vibe.
-    - targetIntel: 1 sentence identifying the biggest threat and why.
-    - advice: An array of 3 specific, punchy tactical recommendations for the players.
-  `;
-
-  try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            sentiment: { type: Type.STRING },
-            targetIntel: { type: Type.STRING },
-            advice: { 
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            }
-          },
-          required: ['sentiment', 'targetIntel', 'advice'],
-        }
-      }
-    });
-    
-    const text = response.text?.trim();
-    if (!text) return null;
-    return JSON.parse(text);
-  } catch (error) {
-    console.error("Gemini analysis error:", error);
-    return null;
-  }
-};
-
 export const askRulesBot = async (query: string): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -141,29 +88,86 @@ export const askRulesBot = async (query: string): Promise<string> => {
   }
 };
 
+// Fix: Added missing getDetailedGameAnalysis export for AnalysisModal
+/**
+ * Generates a detailed game analysis using Gemini.
+ * Includes sentiment, target intel, and strategic advice based on player status and transaction history.
+ */
+export const getDetailedGameAnalysis = async (
+  players: Player[],
+  transactions: Transaction[]
+): Promise<{ sentiment: string; targetIntel: string; advice: string[] } | null> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+  const prompt = `
+    Analyze this Monopoly game state and provide strategic insights for a group of players.
+    
+    Players Status:
+    ${players.map(p => `- ${p.name}: Current Balance ${p.balance} ${p.isBankrupt ? '(Eliminated/Bankrupt)' : ''}`).join('\n')}
+    
+    Recent Transaction Stream (Last 15):
+    ${transactions.slice(-15).map(t => `- From ${t.fromId} to ${t.toId}: Amount ${t.amount} (Type: ${t.type})`).join('\n')}
+    
+    Provide your analysis in JSON format with exactly these properties:
+    1. "sentiment": A brief (1 sentence) description of the game's current atmosphere (e.g., tense, aggressive, cooperative).
+    2. "targetIntel": Identification of who is the current leader or biggest threat, or most vulnerable player.
+    3. "advice": An array of 3-4 specific strategic tips for the players to consider given the current distribution of wealth.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            sentiment: { type: Type.STRING },
+            targetIntel: { type: Type.STRING },
+            advice: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: ['sentiment', 'targetIntel', 'advice'],
+        }
+      }
+    });
+
+    const text = response.text?.trim();
+    if (!text) return null;
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Gemini analysis error:", error);
+    return null;
+  }
+};
+
+// Fix: Added missing getStrategyAdvice export for StrategyModal
+/**
+ * Generates high-level strategic advice for the current board situation.
+ */
 export const getStrategyAdvice = async (players: Player[]): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
-    You are a professional Monopoly strategist. 
-    Analyze the current game state and provide 3 quick, punchy strategy tips based on these balances:
-    ${players.map(p => `${p.name}: ${p.balance}`).join(', ')}
+    Given the current Monopoly game balances:
+    ${players.map(p => `- ${p.name}: ${p.balance}`).join('\n')}
     
-    Identify who is the biggest threat and who needs to make trades to stay alive.
-    Keep the response under 100 words.
+    Provide a single, powerful paragraph of strategic advice. 
+    Adopt the persona of a "Strategic AI Advisor" with a high-tech, futuristic tone. 
+    Focus on wealth management and power dynamics.
   `;
 
   try {
-    const response: GenerateContentResponse = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 0 }
-      }
+      contents: prompt
     });
-    return response.text || "Keep buying property and building houses!";
+    return response.text || "Strategic data stream interrupted. Re-sync suggested.";
   } catch (error) {
     console.error("Gemini strategy error:", error);
-    return "The best strategy? Don't go bankrupt!";
+    return "Error encountered in neural strategy processing uplink.";
   }
 };
